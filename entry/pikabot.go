@@ -18,7 +18,7 @@ func main() {
 	// listen on an HTTP endpoint on port 8080.
 	pika := pikabot.CreatePikaSlash(
 		os.Getenv("SLACK_SIGNING_SECRET"),
-		fmt.Sprintf("/%s/pikascores", os.Getenv("PIKA_CONFIG_DIR"))
+		fmt.Sprintf("/%s/pikascores", os.Getenv("PIKA_CONFIG_DIR")))
 	http.HandleFunc("/", pika.SlashHandler)
 	log.Println("[INFO] Server listening")
 	go http.ListenAndServe(":8080", nil)
@@ -31,8 +31,8 @@ func main() {
 	go rtm.ManageConnection()
 
 	pikaDrive := pikabot.PikaDrive{
-		Client: api,
-		CredFilepath: fmt.Sprintf("/%s/credentials.json", os.Getenv("PIKA_CONFIG_DIR")),
+		Client:        api,
+		CredFilepath:  fmt.Sprintf("/%s/credentials.json", os.Getenv("PIKA_CONFIG_DIR")),
 		TokenFilepath: fmt.Sprintf("/%s/token.json", os.Getenv("PIKA_CONFIG_DIR")),
 	}
 

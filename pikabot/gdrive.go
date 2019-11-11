@@ -17,8 +17,8 @@ import (
 )
 
 type PikaDrive struct {
-	Client *slack.Client
-	CredFilepath string
+	Client        *slack.Client
+	CredFilepath  string
 	TokenFilepath string
 }
 
