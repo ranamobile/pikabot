@@ -15,6 +15,12 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
+type PikaDrive struct {
+	Client *slack.Client
+	CredFilepath string
+	TokenFilepath string
+}
+
 func CreateGoogleService(credential string, token string) (service *drive.Service) {
 	content, err := ioutil.ReadFile(credential)
 	if err != nil {
@@ -102,13 +108,13 @@ func CreateDir(service *drive.Service, name string, parentId string) (*drive.Fil
 	if len(result.Files) > 0 {
 		return result.Files[0], nil
 	} else {
-		drive := &drive.File{
+		driveFile := &drive.File{
 			Name:     name,
 			MimeType: "application/vnd.google-apps.folder",
 			Parents:  []string{parentId},
 		}
 
-		file, err := service.Files.Create(drive).Do()
+		file, err := service.Files.Create(driveFile).Do()
 
 		if err != nil {
 			log.Println("Could not create dir: " + err.Error())
@@ -119,12 +125,12 @@ func CreateDir(service *drive.Service, name string, parentId string) (*drive.Fil
 }
 
 func CreateFile(service *drive.Service, name string, mimeType string, content io.Reader, parentId string) (*drive.File, error) {
-	f := &drive.File{
+	driveFile := &drive.File{
 		MimeType: mimeType,
 		Name:     name,
 		Parents:  []string{parentId},
 	}
-	file, err := service.Files.Create(f).Media(content).Do()
+	file, err := service.Files.Create(driveFile).Media(content).Do()
 
 	if err != nil {
 		log.Println("Could not create file: " + err.Error())
@@ -132,4 +138,51 @@ func CreateFile(service *drive.Service, name string, mimeType string, content io
 	}
 
 	return file, nil
+}
+
+func (pika *PikaDrive) CopyFilesToGdrive(event *slack.MessageEvent) {
+	var channelName string
+	channel, err := pika.Client.GetChannelInfo(event.Channel)
+	if err == nil {
+		channelName = channel.Name
+	} else {
+		group, err := pika.Client.GetGroupInfo(event.Channel)
+		if err != nil {
+			log.Println("[ERROR] Failed to get channel name:", err)
+			return
+		}
+		channelName = group.Name
+	}
+
+	// connect to google drive
+	gdrive := CreateGoogleService(pika.CredFilepath, pika.TokenFilepath)
+	slackDir, err := CreateDir(gdrive, "Slack", "root")
+	if err != nil {
+		log.Println("[ERROR] Failed to create/get directory:", err)
+		return
+	}
+	channelDir, err := CreateDir(gdrive, channelName, slackDir.Id)
+	if err != nil {
+		log.Println("[ERROR] Failed to create/get directory:", err)
+		return
+	}
+
+	for index, item := range event.Files {
+		filename := fmt.Sprintf("%s-%d.jpg", event.Timestamp, index)
+		filepath := fmt.Sprintf("/tmp/%s", filename)
+		handler, err := os.Create(filepath)
+		if err != nil {
+			log.Println("[ERROR] Failed to save image: %s", err)
+			return
+		}
+		pika.Client.GetFile(item.URLPrivateDownload, handler)
+		handler.Close()
+
+		handler, err = os.Open(filepath)
+		if err != nil {
+			log.Println("[ERROR] Failed to read image: %s", err)
+			return
+		}
+		CreateFile(gdrive, filename, "image/jpeg", handler, channelDir.Id)
+	}
 }

@@ -7,13 +7,13 @@ ENV GOPATH /app
 COPY src /app/src
 COPY entry /app/entry
 
-RUN go get -d ./...
-# RUN go get golang.org/x/net/context
-# RUN go get golang.org/x/oauth2
-# RUN go get golang.org/x/oauth2/google
-# RUN go get google.golang.org/api/drive/v3
-# RUN go get github.com/nlopes/slack
+# RUN go get -d ./...
+RUN go get golang.org/x/net/context
+RUN go get golang.org/x/oauth2
+RUN go get golang.org/x/oauth2/google
+RUN go get google.golang.org/api/drive/v3
+RUN go get github.com/nlopes/slack
 
-VOLUME [ "/app" ]
-ENTRYPOINT [ "go", "run", "/app/src/pikabot.go" ]
+VOLUME [ "/app/etc" ]
+ENTRYPOINT [ "go", "run", "/app/entry/pikabot.go" ]
 EXPOSE 8080
