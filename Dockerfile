@@ -1,10 +1,10 @@
 FROM golang:1.13.2-stretch
 
-RUN mkdir -p /app
+RUN mkdir -p /app/src/github.com/ranamobile
 WORKDIR /app
 ENV GOPATH /app
 
-COPY src /app/src
+COPY pikabot /app/src/github.com/ranamobile/pikabot
 COPY entry /app/entry
 
 # RUN go get -d ./...

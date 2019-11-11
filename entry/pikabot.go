@@ -7,32 +7,37 @@ import (
 	"os"
 
 	"github.com/nlopes/slack"
-	"pikabot"
+	"github.com/ranamobile/pikabot"
 )
 
+// This will start up the pikabot and supports slash commands and
+// parse messages with file attachments.  The file attachments will
+// be automatically uploaded to the associated Google Drive account.
 func main() {
-	pika := pikabot.CreatePikaSlash(os.Getenv("SLACK_SIGNING_SECRET"), os.Getenv("SLACK_PIKA_SCOREFILE"))
+	// Create the pikabot slash command handler and configure it to
+	// listen on an HTTP endpoint on port 8080.
+	pika := pikabot.CreatePikaSlash(
+		os.Getenv("SLACK_SIGNING_SECRET"),
+		fmt.Sprintf("/%s/pikascores", os.Getenv("PIKA_CONFIG_DIR"))
 	http.HandleFunc("/", pika.SlashHandler)
 	log.Println("[INFO] Server listening")
 	go http.ListenAndServe(":8080", nil)
 
+	// Configure the real-time messaging (RTM) connection with slack
+	// and the message event handler (PikaDrive).
 	log.Println("[INFO] RTM connection started")
 	api := slack.New(os.Getenv("SLACK_OAUTH_TOKEN"), slack.OptionDebug(true))
+	rtm := api.NewRTM()
+	go rtm.ManageConnection()
+
 	pikaDrive := pikabot.PikaDrive{
 		Client: api,
 		CredFilepath: fmt.Sprintf("/%s/credentials.json", os.Getenv("PIKA_CONFIG_DIR")),
 		TokenFilepath: fmt.Sprintf("/%s/token.json", os.Getenv("PIKA_CONFIG_DIR")),
 	}
 
-	channel, err := api.GetGroupInfo("GBVS0KZ39") //channel
-	if err != nil {
-		log.Println("[DEBUG] Failed to get channel info", err)
-	} else {
-		log.Println("[DEBUG] Channel name:", channel.Name)
-	}
-
-	rtm := api.NewRTM()
-	go rtm.ManageConnection()
+	// Listen for message events forever and parse the message
+	// events with associated files to be copied to Google Drive.
 	for msg := range rtm.IncomingEvents {
 		log.Print("Event Received: ")
 		switch ev := msg.Data.(type) {
@@ -43,5 +48,4 @@ func main() {
 			}
 		}
 	}
-
 }
