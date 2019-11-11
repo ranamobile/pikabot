@@ -1,0 +1,5 @@
+.env
+pkg/
+
+# pikabot configs
+etc/
