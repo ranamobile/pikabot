@@ -1,13 +1,12 @@
 FROM golang:1.13.2-stretch
 
-RUN mkdir -p /app/src/github.com/ranamobile
+RUN mkdir -p /app/src/github.com/ranamobile/pikabot
 WORKDIR /app
 ENV GOPATH /app
 
-COPY pikabot /app/src/github.com/ranamobile/pikabot
+COPY *.go /app/src/github.com/ranamobile/pikabot
 COPY entry /app/entry
 
-# RUN go get -d ./...
 RUN go get golang.org/x/net/context
 RUN go get golang.org/x/oauth2
 RUN go get golang.org/x/oauth2/google

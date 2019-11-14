@@ -14,14 +14,16 @@ import (
 // parse messages with file attachments.  The file attachments will
 // be automatically uploaded to the associated Google Drive account.
 func main() {
-	// Create the pikabot slash command handler and configure it to
-	// listen on an HTTP endpoint on port 8080.
-	pika := pikabot.CreatePikaSlash(
-		os.Getenv("SLACK_SIGNING_SECRET"),
-		fmt.Sprintf("/%s/pikascores", os.Getenv("PIKA_CONFIG_DIR")))
-	http.HandleFunc("/", pika.SlashHandler)
-	log.Println("[INFO] Server listening")
-	go http.ListenAndServe(":8080", nil)
+	if os.Getenv("ENABLE_SLACK_CMD") {
+		// Create the pikabot slash command handler and configure it to
+		// listen on an HTTP endpoint on port 8080.
+		pika := pikabot.CreatePikaSlash(
+			os.Getenv("SLACK_SIGNING_SECRET"),
+			fmt.Sprintf("/%s/pikascores", os.Getenv("PIKA_CONFIG_DIR")))
+		http.HandleFunc("/", pika.SlashHandler)
+		log.Println("[INFO] Server listening")
+		go http.ListenAndServe(":8080", nil)
+	}
 
 	// Configure the real-time messaging (RTM) connection with slack
 	// and the message event handler (PikaDrive).
